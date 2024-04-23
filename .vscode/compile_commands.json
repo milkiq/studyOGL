@@ -1,6 +1,11 @@
 [
 {
-  "directory": "d:\\project\\studyOpenGL\\studyOpenGL",
-  "arguments": ["D:\\software\\Microsoft Visual Studio\\2022\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/Zi", "/FS", "/Fdbuild\\windows\\x64\\debug\\compile.studyOpenGL.pdb", "/Od", "/DGLFW_INCLUDE_NONE", "/EHsc", "/IC:\\Users\\CE-GODOT3\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\include", "/IC:\\Users\\CE-GODOT3\\AppData\\Local\\.xmake\\packages\\g\\glad\\v0.1.36\\d58ee23747ff411aae74b40986460499\\include", "/Fobuild\\.objs\\studyOpenGL\\windows\\x64\\debug\\src\\main.cpp.obj", "src\\main.cpp", "-imsvc", "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\cppwinrt", "-imsvc", "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\shared", "-imsvc", "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\ucrt", "-imsvc", "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\um", "-imsvc", "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\winrt"],
+  "directory": "D:\\project\\studyOpenGL\\studyOpenGL",
+  "arguments": ["D:\\software\\Microsoft Visual Studio\\2022\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/Zi", "/FS", "/Fdbuild\\windows\\x64\\debug\\compile.studyOpenGL.pdb", "/Od", "/Ibuild\\.gens\\studyOpenGL\\windows\\x64\\debug\\rules\\utils\\glsl2spv", "/DGLFW_INCLUDE_NONE", "/EHsc", "/IC:\\Users\\CE-GODOT3\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\include", "/IC:\\Users\\CE-GODOT3\\AppData\\Local\\.xmake\\packages\\g\\glad\\v0.1.36\\d58ee23747ff411aae74b40986460499\\include", "/Fobuild\\.objs\\studyOpenGL\\windows\\x64\\debug\\src\\main.cpp.obj", "src\\main.cpp"],
   "file": "src\\main.cpp"
+},
+{
+  "directory": "D:\\project\\studyOpenGL\\studyOpenGL",
+  "arguments": ["D:\\software\\Microsoft Visual Studio\\2022\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/Zi", "/FS", "/Fdbuild\\windows\\x64\\debug\\compile.studyOpenGL.pdb", "/Od", "/Ibuild\\.gens\\studyOpenGL\\windows\\x64\\debug\\rules\\utils\\glsl2spv", "/DGLFW_INCLUDE_NONE", "/EHsc", "/IC:\\Users\\CE-GODOT3\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\include", "/IC:\\Users\\CE-GODOT3\\AppData\\Local\\.xmake\\packages\\g\\glad\\v0.1.36\\d58ee23747ff411aae74b40986460499\\include", "/Fobuild\\.objs\\studyOpenGL\\windows\\x64\\debug\\src\\shader.cpp.obj", "src\\shader.cpp"],
+  "file": "src\\shader.cpp"
 }]

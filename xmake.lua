@@ -2,10 +2,20 @@ add_requires("glfw", "opengl", "glad")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_rules("mode.debug", "mode.release")
 
+add_requires("glslang", {configs = {binaryonly = true}})
+
 target("studyOpenGL")
     set_kind("binary")
+    add_rules("utils.glsl2spv", {bin2c = true})
     add_files("src/*.cpp")
-    add_packages("glfw", "opengl", "glad")
+    add_files("shaders/*.vert", "shaders/*.frag")
+    add_packages("glslang", "glfw", "opengl", "glad")
+
+-- after_build_file(function(target,sourcefile,opt)
+--         if os.exists("./shaders") then
+--             os.cp("./shaders",target:targetdir())
+--         end
+--     end)
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
