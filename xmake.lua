@@ -11,11 +11,13 @@ target("studyOpenGL")
     add_files("shaders/*.vert", "shaders/*.frag")
     add_packages("glslang", "glfw", "opengl", "glad")
 
--- after_build_file(function(target,sourcefile,opt)
---         if os.exists("./shaders") then
---             os.cp("./shaders",target:targetdir())
---         end
---     end)
+    if is_plat("macosx") then
+        after_build_file(function(target,sourcefile,opt)
+                if os.exists("./shaders") then
+                    os.cp("./shaders",target:targetdir())
+                end
+            end)
+    end
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

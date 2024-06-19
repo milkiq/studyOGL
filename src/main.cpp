@@ -67,7 +67,9 @@ int main(int argc, char** argv)
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+#ifndef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+#endif
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
@@ -110,13 +112,16 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // Shader shader("shaders/triangle.vs", "shaders/triangle.fs");
+#ifndef __APPLE__
     Shader shader(
         (const char*)g_vert_spv_data,
         sizeof(g_vert_spv_data),
         (const char*)g_frag_spv_data,
         sizeof(g_frag_spv_data)
     );
+#else
+    Shader shader("shaders/triangle.vs", "shaders/triangle.fs");
+#endif
 
     if (shader.ID == -1) {
         return -1;
