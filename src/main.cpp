@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "shader.h"
+#include "resource/image.h"
 
 static unsigned char g_vert_spv_data[] = {
     #include "triangle.vert.spv.h"
@@ -56,10 +57,31 @@ void initBuffers(
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices, indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+}
+
+unsigned int gen_tex(const char* filename) {
+    Image image(filename);
+    if (image.get_data() == nullptr) {
+        return -1;
+    }
+
+    GLint tex_format = image.get_channels() == 4 ? GL_RGBA : GL_RGB;
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, tex_format, image.get_width(), image.get_height(), 0, tex_format, GL_UNSIGNED_BYTE, image.get_data());
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    return texture;
 }
 
 int main(int argc, char** argv)
@@ -93,16 +115,17 @@ int main(int argc, char** argv)
 
 
     float vertices[] = {
-        // 位置              // 颜色
-        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // 右下
-        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // 左下
-        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // 顶部
+    //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
     };
 
     unsigned int indices[] = {
-        // 0, 1, 3, // 第一个三角形
-        // 1, 2, 3  // 第二个三角形
-        0, 1, 2
+        0, 1, 3, // 第一个三角形
+        1, 2, 3  // 第二个三角形
+        // 0, 1, 2
     };
 
     unsigned int VBO, EBO, VAO;
@@ -126,6 +149,24 @@ int main(int argc, char** argv)
     if (shader.ID == -1) {
         return -1;
     }
+
+    unsigned int texture = gen_tex("resources/textures/container.jpg");
+    if (texture == -1) {
+        std::cout << "Failed to load container texture" << std::endl;
+        return -1;
+    }
+
+    unsigned int texture2 = gen_tex("resources/textures/awesomeface.png");
+    if (texture2 == -1) {
+        std::cout << "Failed to load awesomeface texture" << std::endl;
+        return -1;
+    }
+    // wrap repeat normal
+
+    // if not use binding, use this
+    // shader.use();
+    // shader.setInt("texture1", 0);
+    // shader.setInt("texture2", 1);
     
     while (!glfwWindowShouldClose(window))
     {
@@ -141,6 +182,13 @@ int main(int argc, char** argv)
 
         shader.use();
         // shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
+        shader.setFloat("mix_value", 0.2f);
+
+        // bind textures on corresponding texture units
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

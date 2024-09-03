@@ -1,15 +1,84 @@
+add_requires("stb")
 add_requires("glfw", "opengl", "glad")
+add_requires("glslang", {configs = {binaryonly = true}})
+
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 add_rules("mode.debug", "mode.release")
 
-add_requires("glslang", {configs = {binaryonly = true}})
+
+-- glsl rule
+
+rule("custom.glsl2spv")
+    set_extensions(".vert", ".tesc", ".tese", ".geom", ".comp", ".frag", ".comp", ".mesh", ".task", ".rgen", ".rint", ".rahit", ".rchit", ".rmiss", ".rcall", ".glsl")
+    on_load(function (target)
+        local is_bin2c = target:extraconf("rules", "custom.glsl2spv", "bin2c")
+        if is_bin2c then
+            local headerdir = path.join(target:autogendir(), "rules", "utils", "glsl2spv")
+            if not os.isdir(headerdir) then
+                os.mkdir(headerdir)
+            end
+            target:add("includedirs", headerdir)
+        end
+    end)
+    before_buildcmd_file(function (target, batchcmds, sourcefile_glsl, opt)
+        import("lib.detect.find_tool")
+
+        -- get glslangValidator
+        local glslc
+        local glslangValidator = find_tool("glslangValidator")
+        if not glslangValidator then
+            glslc = find_tool("glslc")
+        end
+        assert(glslangValidator or glslc, "glslangValidator or glslc not found!")
+
+        -- glsl to spv
+        local targetenv = target:extraconf("rules", "custom.glsl2spv", "targetenv") or "vulkan1.0"
+        local client = target:extraconf("rules", "custom.glsl2spv", "client") or "vulkan100"
+        local outputdir = target:extraconf("rules", "custom.glsl2spv", "outputdir") or path.join(target:autogendir(), "rules", "custom", "glsl2spv")
+        local spvfilepath = path.join(outputdir, path.filename(sourcefile_glsl) .. ".spv")
+        batchcmds:show_progress(opt.progress, "${color.build.object}generating.glsl2spv %s", sourcefile_glsl)
+        batchcmds:mkdir(outputdir)
+        if glslangValidator then
+            batchcmds:vrunv(glslangValidator.program, {"--target-env", targetenv, "--client", client, "-o", path(spvfilepath), path(sourcefile_glsl)})
+        else
+            batchcmds:vrunv(glslc.program, {"--target-env", targetenv, "-o", path(spvfilepath), path(sourcefile_glsl)})
+        end
+
+        -- do bin2c
+        local outputfile = spvfilepath
+        local is_bin2c = target:extraconf("rules", "custom.glsl2spv", "bin2c")
+        if is_bin2c then
+            -- get header file
+            local headerdir = outputdir
+            local headerfile = path.join(headerdir, path.filename(spvfilepath) .. ".h")
+            target:add("includedirs", headerdir)
+            outputfile = headerfile
+
+            -- add commands
+            local argv = {"lua", "private.utils.bin2c", "--nozeroend", "-i", path(spvfilepath), "-o", path(headerfile)}
+            batchcmds:vrunv(os.programfile(), argv, {envs = {XMAKE_SKIP_HISTORY = "y"}})
+        end
+
+        -- add deps
+        batchcmds:add_depfiles(sourcefile_glsl)
+        batchcmds:set_depmtime(os.mtime(outputfile))
+        batchcmds:set_depcache(target:dependfile(outputfile))
+    end)
+
+--glsl rule end
 
 target("studyOpenGL")
     set_kind("binary")
-    add_rules("utils.glsl2spv", {bin2c = true})
-    add_files("src/*.cpp")
+    add_rules("custom.glsl2spv", {bin2c = true, targetenv = "opengl", clientver = "opengl100"})
+    add_files("src/**.cpp")
     add_files("shaders/*.vert", "shaders/*.frag")
-    add_packages("glslang", "glfw", "opengl", "glad")
+    add_packages("stb", "glslang", "glfw", "opengl", "glad")
+
+    after_build_file(function(target, sourcefile, opt)
+            if os.exists("./resources") then
+                os.cp("./resources",target:targetdir())
+            end
+        end)
 
     if is_plat("macosx") then
         after_build_file(function(target,sourcefile,opt)
