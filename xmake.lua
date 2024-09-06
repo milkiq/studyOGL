@@ -1,5 +1,4 @@
-add_requires("stb")
-add_requires("glfw", "opengl", "glad")
+add_requires("stb", "glfw", "opengl", "glad", "eigen")
 add_requires("glslang", {configs = {binaryonly = true}})
 
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
@@ -69,10 +68,10 @@ rule("custom.glsl2spv")
 
 target("studyOpenGL")
     set_kind("binary")
-    add_rules("custom.glsl2spv", {bin2c = true, targetenv = "opengl", clientver = "opengl100"})
+    add_rules("custom.glsl2spv", {bin2c = true, targetenv = "opengl", client = "opengl100"})
     add_files("src/**.cpp")
     add_files("shaders/*.vert", "shaders/*.frag")
-    add_packages("stb", "glslang", "glfw", "opengl", "glad")
+    add_packages("stb", "glslang", "glfw", "opengl", "glad", "eigen")
 
     after_build_file(function(target, sourcefile, opt)
             if os.exists("./resources") then

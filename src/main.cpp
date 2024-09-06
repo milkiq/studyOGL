@@ -1,8 +1,11 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <Eigen/Geometry>
 #include "shader.h"
 #include "resource/image.h"
+
+#define MY_PI 3.14159265358979323846
 
 static unsigned char g_vert_spv_data[] = {
     #include "triangle.vert.spv.h"
@@ -13,6 +16,7 @@ static unsigned char g_frag_spv_data[] = {
 };
 
 using namespace std;
+using namespace Eigen;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -86,6 +90,7 @@ unsigned int gen_tex(const char* filename) {
 
 int main(int argc, char** argv)
 {
+    Transform<float, 3, Affine> t = Translation3f(0,0,0) * AngleAxisf(0.5*MY_PI, Vector3f(0,0,1)) * Scaling(0.5f);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -182,6 +187,8 @@ int main(int argc, char** argv)
 
         shader.use();
         // shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
+        GLint transformLoc = glGetUniformLocation(shader.ID, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, t.data());
         shader.setFloat("mix_value", 0.2f);
 
         // bind textures on corresponding texture units
