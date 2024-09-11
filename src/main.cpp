@@ -88,9 +88,23 @@ unsigned int gen_tex(const char* filename) {
     return texture;
 }
 
+Matrix4f perspective(float fovY, float aspect, float near, float far) {
+    Matrix4f m;
+    m.setZero();
+    float f = 1.0f / tan(fovY / 2.0f);
+    m(0, 0) = f / aspect;
+    m(1, 1) = f;
+    m(2, 2) = (far + near) / (far - near);
+    m(2, 3) = -1.0f;
+    m(3, 2) = -(2.0f * far * near) / (far - near);
+    return m;
+}
+
 int main(int argc, char** argv)
 {
-    Transform<float, 3, Affine> t = Translation3f(0,0,0) * AngleAxisf(0.5*MY_PI, Vector3f(0,0,1)) * Scaling(0.5f);
+    Transform<float, 3, Affine> model_matrix = Translation3f(0,0,0) * AngleAxisf(0, Vector3f(0,1,0)) * Scaling(1.0f);
+    Transform<float, 3, Affine> view_matrix = Translation3f(0,0,-3) * AngleAxisf(0, Vector3f(0,0,1)) * Scaling(1.0f);
+    Matrix4f projection_matrix = perspective(0.5*MY_PI, 800.0f/600.0f, 0.1f, 100.0f);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -121,16 +135,35 @@ int main(int argc, char** argv)
 
     float vertices[] = {
     //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
-        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
+        0.25f,  0.25f, 0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 前右上
+        0.25f, -0.25f, 0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 前右下
+        -0.25f, -0.25f, 0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 前左下
+        -0.25f,  0.25f, 0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 前左上
+        0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 后右上
+        0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 后右下
+        -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 后左下
+        -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 后左上
     };
 
     unsigned int indices[] = {
+        // 前
         0, 1, 3, // 第一个三角形
-        1, 2, 3  // 第二个三角形
-        // 0, 1, 2
+        1, 2, 3,  // 第二个三角形
+        // 上
+        4, 0, 7,
+        0, 3, 7,
+        // 下
+        1, 5, 2,
+        5, 6, 2,
+        // 左
+        3, 2, 7,
+        2, 6, 7,
+        // 右
+        4, 5, 0,
+        5, 1, 0,
+        // 后
+        7, 6, 4,
+        6, 5, 4,
     };
 
     unsigned int VBO, EBO, VAO;
@@ -180,15 +213,18 @@ int main(int argc, char** argv)
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // float timeValue = glfwGetTime();
-        // float colorValue = sin(timeValue) / 2.0f + 0.5f;
-        // int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        // glUniform4f(vertexColorLocation, colorValue, 0.0f, 0.0f, 1.0f);
+        float time_value = glfwGetTime();
+        model_matrix = Translation3f(0,0,0) * AngleAxisf(-time_value*MY_PI, Vector3f(0,1,0)) * Scaling(1.0f);
 
         shader.use();
         // shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
-        GLint transformLoc = glGetUniformLocation(shader.ID, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, t.data());
+        GLint transformLoc = glGetUniformLocation(shader.ID, "model_matrix");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, model_matrix.data());
+        transformLoc = glGetUniformLocation(shader.ID, "view_matrix");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, view_matrix.data());
+        transformLoc = glGetUniformLocation(shader.ID, "projection_matrix");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, projection_matrix.data());
+
         shader.setFloat("mix_value", 0.2f);
 
         // bind textures on corresponding texture units
@@ -198,7 +234,7 @@ int main(int argc, char** argv)
         glBindTexture(GL_TEXTURE_2D, texture2);
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
         // glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
 

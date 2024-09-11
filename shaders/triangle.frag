@@ -14,14 +14,14 @@ layout (location = 0) uniform float mix_value;
 
 void main()
 {
-    // fragColor = vec4(ourColor, 1.0f);
-    vec4 bg = texture(bgTexture, TexCoord);
-    vec4 face = texture(faceTexture, TexCoord);
-    if (face.a > 0.1f)
-    {
-        fragColor = mix(bg, face, mix_value);
-    } else {
-        fragColor = bg;
-    }
+    fragColor = vec4(ourColor, 1.0f);
+    // vec4 bg = texture(bgTexture, TexCoord);
+    // vec4 face = texture(faceTexture, TexCoord);
+    // if (face.a > 0.1f)
+    // {
+    //     fragColor = mix(bg, face, mix_value);
+    // } else {
+    //     fragColor = bg;
+    // }
     // fragColor = texture(bgTexture, TexCoord) * vec4(ourColor, 1.0f);
 }
