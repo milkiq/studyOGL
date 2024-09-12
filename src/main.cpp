@@ -1,7 +1,11 @@
+#define GLM_ENABLE_EXPERIMENTAL
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <Eigen/Geometry>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include "shader.h"
 #include "resource/image.h"
 
@@ -16,7 +20,6 @@ static unsigned char g_frag_spv_data[] = {
 };
 
 using namespace std;
-using namespace Eigen;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -88,23 +91,11 @@ unsigned int gen_tex(const char* filename) {
     return texture;
 }
 
-Matrix4f perspective(float fovY, float aspect, float near, float far) {
-    Matrix4f m;
-    m.setZero();
-    float f = 1.0f / tan(fovY / 2.0f);
-    m(0, 0) = f / aspect;
-    m(1, 1) = f;
-    m(2, 2) = (far + near) / (far - near);
-    m(2, 3) = -1.0f;
-    m(3, 2) = -(2.0f * far * near) / (far - near);
-    return m;
-}
-
 int main(int argc, char** argv)
 {
-    Transform<float, 3, Affine> model_matrix = Translation3f(0,0,0) * AngleAxisf(0, Vector3f(0,1,0)) * Scaling(1.0f);
-    Transform<float, 3, Affine> view_matrix = Translation3f(0,0,-3) * AngleAxisf(0, Vector3f(0,0,1)) * Scaling(1.0f);
-    Matrix4f projection_matrix = perspective(0.5*MY_PI, 800.0f/600.0f, 0.1f, 100.0f);
+    glm::mat4 model_matrix = glm::mat4(1.0f);
+    glm::mat4 view_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+    glm::mat4 projection_matrix = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -139,10 +130,10 @@ int main(int argc, char** argv)
         0.25f, -0.25f, 0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 前右下
         -0.25f, -0.25f, 0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 前左下
         -0.25f,  0.25f, 0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 前左上
-        0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 后右上
-        0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 后右下
-        -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 后左下
-        -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 后左上
+        0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   0.0f, 0.0f,   // 后右上
+        0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,   // 后右下
+        -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   // 后左下
+        -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f    // 后左上
     };
 
     unsigned int indices[] = {
@@ -181,7 +172,7 @@ int main(int argc, char** argv)
         sizeof(g_frag_spv_data)
     );
 #else
-    Shader shader("shaders/triangle.vs", "shaders/triangle.fs");
+    Shader shader("shaders/triangle.vert", "shaders/triangle.frag");
 #endif
 
     if (shader.ID == -1) {
@@ -211,19 +202,20 @@ int main(int argc, char** argv)
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
         float time_value = glfwGetTime();
-        model_matrix = Translation3f(0,0,0) * AngleAxisf(-time_value*MY_PI, Vector3f(0,1,0)) * Scaling(1.0f);
+        model_matrix = glm::rotate(model_matrix, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 
         shader.use();
-        // shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
+        shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
         GLint transformLoc = glGetUniformLocation(shader.ID, "model_matrix");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, model_matrix.data());
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(model_matrix));
         transformLoc = glGetUniformLocation(shader.ID, "view_matrix");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, view_matrix.data());
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(view_matrix));
         transformLoc = glGetUniformLocation(shader.ID, "projection_matrix");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, projection_matrix.data());
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(projection_matrix));
 
         shader.setFloat("mix_value", 0.2f);
 
