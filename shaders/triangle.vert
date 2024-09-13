@@ -14,8 +14,6 @@ layout (location = 5) uniform mat4 projection_matrix;
 void main()
 {
     gl_Position = projection_matrix * view_matrix * model_matrix * vec4(aPos, 1.0);
-    gl_Position = gl_Position / gl_Position.w;
-    // gl_Position = vec4(aPos, 1.0);
     ourColor = aColor;
     TexCoord = aTexCoord;
 }

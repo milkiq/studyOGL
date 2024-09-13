@@ -23,5 +23,4 @@ void main()
     } else {
         fragColor = bg;
     }
-    // fragColor = texture(bgTexture, TexCoord) * vec4(ourColor, 1.0f);
 }
