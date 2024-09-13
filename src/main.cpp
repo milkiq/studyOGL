@@ -4,7 +4,9 @@
 #include <GLFW/glfw3.h>
 #include "core/math.h"
 #include "core/shader.h"
-#include "core/camera.h"
+#include "core/mesh.h"
+#include "node/camera.h"
+#include "node/light3d.h"
 #include "resource/image.h"
 
 static unsigned char g_vert_spv_data[] = {
@@ -13,6 +15,14 @@ static unsigned char g_vert_spv_data[] = {
 
 static unsigned char g_frag_spv_data[] = {
     #include "triangle.frag.spv.h"
+};
+
+static unsigned char g_light_vert_spv_data[] = {
+    #include "light_mesh.vert.spv.h"
+};
+
+static unsigned char g_light_frag_spv_data[] = {
+    #include "light_mesh.frag.spv.h"
 };
 
 using namespace std;
@@ -192,16 +202,28 @@ int main(int argc, char** argv)
 
     // if not use binding, use this
     // shader.use();
-    // shader.setInt("texture1", 0);
-    // shader.setInt("texture2", 1);
+    // shader.set_int("texture1", 0);
+    // shader.set_int("texture2", 1);
     float last_frame_time = glfwGetTime();
 
     Camera main_camera;
     main_camera.set_clip(0.1f, 100.0f);
-    main_camera.set_pos(glm::vec3(0.0f, 1.0f, 2.0f));
     main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     float move_radius = 0.0f;
+
+    Mesh mesh(vertices, sizeof(vertices), indices, sizeof(indices));
+    Shader light_shader(
+        (const char*)g_light_vert_spv_data,
+        sizeof(g_light_vert_spv_data),
+        (const char*)g_light_frag_spv_data,
+        sizeof(g_light_frag_spv_data)
+    );
+    Light3DMesh light_mesh(&mesh, &light_shader);
+    light_mesh.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    light_mesh.position = glm::vec3(0.6f, 0.0f, 0.0f);
+    light_mesh.rotation = glm::vec3(2.0f, 1.0f, 0.0f);
+    light_mesh.scale = glm::vec3(0.2f, 0.2f, 0.2f);
     
     while (!glfwWindowShouldClose(window))
     {
@@ -216,7 +238,7 @@ int main(int argc, char** argv)
         last_frame_time = time_value;
 
         move_radius += MY_PI / 6. * delta;
-        main_camera.set_pos(glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius)));
+        main_camera.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
         main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         glm::mat4 model_matrix = glm::mat4(1.0f);
@@ -224,7 +246,7 @@ int main(int argc, char** argv)
         glm::mat4 projection_matrix = main_camera.get_projection_matrix(vp_width / vp_height);
 
         shader.use();
-        shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
+        shader.set_vec3("ourColor", 0.0f, 0.0f, 1.0f);
         GLint transformLoc = glGetUniformLocation(shader.ID, "model_matrix");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(model_matrix));
         transformLoc = glGetUniformLocation(shader.ID, "view_matrix");
@@ -232,7 +254,7 @@ int main(int argc, char** argv)
         transformLoc = glGetUniformLocation(shader.ID, "projection_matrix");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(projection_matrix));
 
-        shader.setFloat("mix_value", 0.2f);
+        shader.set_float("mix_value", 0.2f);
 
         // bind textures on corresponding texture units
         glActiveTexture(GL_TEXTURE0);
@@ -242,6 +264,9 @@ int main(int argc, char** argv)
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
+
+        light_mesh.draw(&main_camera, vp_width / vp_height);
+
         // glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
 

@@ -1,12 +1,11 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "math.h"
+#include "node3d.h"
+#include "../core/math.h"
 
-class Camera {
+class Camera : public Node3D {
 private:
-    glm::vec3 global_position = glm::vec3(0,0,0);
-    glm::quat global_rotation = glm::quat(1,0,0,0);
     glm::vec3 up = glm::vec3(0,1,0);
 
     float fovY = MY_PI_4;
@@ -18,7 +17,6 @@ public:
     ~Camera();
 
     void set_fovY(float fovY);
-    void set_pos(glm::vec3 global_position);
     void set_clip(float near_clip, float far_clip);
     void look_at(glm::vec3 target, glm::vec3 up);
     float get_fovY();
