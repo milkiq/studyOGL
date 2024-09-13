@@ -2,14 +2,10 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include "shader.h"
+#include "core/math.h"
+#include "core/shader.h"
+#include "core/camera.h"
 #include "resource/image.h"
-
-#define MY_PI 3.14159265358979323846
 
 static unsigned char g_vert_spv_data[] = {
     #include "triangle.vert.spv.h"
@@ -21,8 +17,13 @@ static unsigned char g_frag_spv_data[] = {
 
 using namespace std;
 
+float vp_width = 800.0f;
+float vp_height = 600.0f;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    vp_width = width;
+    vp_height = height;
     glViewport(0, 0, width, height);
 }
 
@@ -93,9 +94,6 @@ unsigned int gen_tex(const char* filename) {
 
 int main(int argc, char** argv)
 {
-    glm::mat4 model_matrix = glm::mat4(1.0f);
-    glm::mat4 view_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-    glm::mat4 projection_matrix = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -105,7 +103,7 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(vp_width, vp_height, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         cout << "Failed to create GLFW window" << endl;
@@ -130,10 +128,10 @@ int main(int argc, char** argv)
         0.25f, -0.25f, 0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 前右下
         -0.25f, -0.25f, 0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 前左下
         -0.25f,  0.25f, 0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 前左上
-        0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   0.0f, 0.0f,   // 后右上
-        0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,   // 后右下
-        -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   // 后左下
-        -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f    // 后左上
+        0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f,   // 后右上
+        0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,   // 后右下
+        -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // 后左下
+        -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f    // 后左上
     };
 
     unsigned int indices[] = {
@@ -197,6 +195,13 @@ int main(int argc, char** argv)
     // shader.setInt("texture1", 0);
     // shader.setInt("texture2", 1);
     float last_frame_time = glfwGetTime();
+
+    Camera main_camera;
+    main_camera.set_clip(0.1f, 100.0f);
+    main_camera.set_pos(glm::vec3(0.0f, 1.0f, 2.0f));
+    main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    float move_radius = 0.0f;
     
     while (!glfwWindowShouldClose(window))
     {
@@ -210,7 +215,13 @@ int main(int argc, char** argv)
         float delta = time_value - last_frame_time;
         last_frame_time = time_value;
 
-        model_matrix = glm::rotate(model_matrix, 1 * delta, glm::vec3(0.0f, 1.0f, 0.0f));
+        move_radius += MY_PI / 6. * delta;
+        main_camera.set_pos(glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius)));
+        main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 model_matrix = glm::mat4(1.0f);
+        glm::mat4 view_matrix = main_camera.get_view_matrix();
+        glm::mat4 projection_matrix = main_camera.get_projection_matrix(vp_width / vp_height);
 
         shader.use();
         shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
