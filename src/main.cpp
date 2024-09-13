@@ -196,6 +196,7 @@ int main(int argc, char** argv)
     // shader.use();
     // shader.setInt("texture1", 0);
     // shader.setInt("texture2", 1);
+    float last_frame_time = glfwGetTime();
     
     while (!glfwWindowShouldClose(window))
     {
@@ -206,7 +207,10 @@ int main(int argc, char** argv)
         glEnable(GL_DEPTH_TEST);
 
         float time_value = glfwGetTime();
-        model_matrix = glm::rotate(model_matrix, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
+        float delta = time_value - last_frame_time;
+        last_frame_time = time_value;
+
+        model_matrix = glm::rotate(model_matrix, 1 * delta, glm::vec3(0.0f, 1.0f, 0.0f));
 
         shader.use();
         shader.setVec3("ourColor", 0.0f, 0.0f, 1.0f);
