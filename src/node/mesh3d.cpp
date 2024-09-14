@@ -15,6 +15,9 @@ void Mesh3D::draw() {
         return;
     }
     this->shader->use();
-    this->shader->set_mat4("model_matrix", this->get_model_matrix());
+    glm::mat4 model_matrix = this->get_model_matrix();
+    glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
+    this->shader->set_mat4("model_matrix", model_matrix);
+    this->shader->set_mat3("normal_matrix", normal_matrix);
     this->mesh->draw();
 }

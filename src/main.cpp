@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
     Light3DMesh light_mesh(&box_mesh, &light_shader);
     light_mesh.color = glm::vec3(1.0f, 1.0f, 1.0f);
-    light_mesh.position = glm::vec3(0.6f, 0.0f, 0.0f);
+    light_mesh.position = glm::vec3(0.5f, 0.5f, 0.1f);
     light_mesh.rotation = glm::vec3(2.0f, 1.0f, 0.0f);
     light_mesh.scale = glm::vec3(0.2f, 0.2f, 0.2f);
 
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
     {
         processInput(window);
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -220,8 +220,9 @@ int main(int argc, char** argv)
         last_frame_time = time_value;
 
         move_radius += MY_PI / 6. * delta;
-        main_camera.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
-        main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // main_camera.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
+        // main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        box_instance.rotation = glm::vec3(0.0f, move_radius, 0.0f);
 
         box_instance.draw();
         light_mesh.draw();

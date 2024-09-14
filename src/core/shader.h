@@ -33,6 +33,7 @@ public:
     void set_float(const std::string &name, float value) const;
     void set_vec3(const std::string &name, float x, float y, float z) const;
     void set_vec3(const std::string &name, const glm::vec3 value) const;
+    void set_mat3(const std::string &name, const glm::mat3 value) const;
     void set_mat4(const std::string &name, const glm::mat4 value) const;
 
     void bind_texture(unsigned int texture, GLint unit) const;

@@ -12,14 +12,29 @@ layout (binding = 1) uniform sampler2D faceTexture;
 // but set value still like this: glUniform1f(glGetUniformLocation(shader.ID, "mix_value"), 0.2f);
 layout (location = 0) uniform float mix_value;
 
+vec3 light_color = vec3(1.0, 1.0, 1.0);
+
 void main()
 {
     vec4 bg = texture(bgTexture, TexCoord);
     vec4 face = texture(faceTexture, TexCoord);
+
+    vec4 base_color;
     if (face.a > 0.1f)
     {
-        fragColor = mix(bg, face, mix_value);
+        base_color = mix(bg, face, mix_value);
     } else {
-        fragColor = bg;
+        base_color = bg;
     }
+
+    float ambient_strength = 0.1;
+    vec3 ambient = ambient_strength * light_color;
+
+    vec3 light_dir = normalize(vec3(0.5, 0.5, 0.1));
+    float diff = max(dot(Normal, light_dir), 0.0);
+    vec3 diffuse = diff * light_color;
+
+    vec3 result = (ambient + diffuse) * base_color.rgb;
+
+    fragColor = vec4(result, 1.0);
 }
