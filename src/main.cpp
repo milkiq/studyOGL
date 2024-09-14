@@ -10,6 +10,7 @@
 #include "node/mesh3d.h"
 #include "node/light3d.h"
 #include "resource/image.h"
+#include "resource/box_model.h"
 
 static unsigned char box_vert_spv_data[] = {
     #include "triangle.vert.spv.h"
@@ -31,39 +32,6 @@ using namespace std;
 
 float vp_width = 800.0f;
 float vp_height = 600.0f;
-
-float vertices[] = {
-//     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-    0.25f,  0.25f, 0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 前右上
-    0.25f, -0.25f, 0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 前右下
-    -0.25f, -0.25f, 0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 前左下
-    -0.25f,  0.25f, 0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 前左上
-    0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f,   // 后右上
-    0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,   // 后右下
-    -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // 后左下
-    -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f    // 后左上
-};
-
-unsigned int indices[] = {
-    // 前
-    0, 1, 3, // 第一个三角形
-    1, 2, 3,  // 第二个三角形
-    // 上
-    4, 0, 7,
-    0, 3, 7,
-    // 下
-    1, 5, 2,
-    5, 6, 2,
-    // 左
-    3, 2, 7,
-    2, 6, 7,
-    // 右
-    4, 5, 0,
-    5, 1, 0,
-    // 后
-    7, 6, 4,
-    6, 5, 4,
-};
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -150,12 +118,14 @@ int main(int argc, char** argv)
     }
 
     Camera main_camera;
+    main_camera.position = glm::vec3(1.0f, 1.0f, 2.0f);
     main_camera.set_clip(0.1f, 100.0f);
     main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     vp.set_main_camera(&main_camera);
 
-    Mesh box_mesh(vertices, sizeof(vertices), indices, sizeof(indices));
+    BoxModel box_model;
+    Mesh box_mesh(*box_model.get_vertices(), *box_model.get_indices());
     if (box_mesh.is_valid() == false) {
         return -1;
     }

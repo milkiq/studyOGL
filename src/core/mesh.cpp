@@ -1,10 +1,9 @@
 #include "mesh.h"
 #include <iostream>
 
-// vertice data contains position, color and texture coordinates
-Mesh::Mesh(float *vertices, unsigned int verticesSize, unsigned int *indices, unsigned int indicesSize) {
-    this->verticesSize = verticesSize;
-    this->indicesSize = indicesSize;
+// vertice data contains position, normal, color and texture coordinates
+Mesh::Mesh(std::vector<Vertex> &vertex_data, std::vector<unsigned int> &index_data) {
+    this->index_count = index_data.size();
 
     glGenBuffers(1, &EBO);
     glGenBuffers(1, &VBO);
@@ -13,16 +12,21 @@ Mesh::Mesh(float *vertices, unsigned int verticesSize, unsigned int *indices, un
     glBindVertexArray(VAO);
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, verticesSize, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex_data.size() * sizeof(Vertex), &vertex_data[0], GL_STATIC_DRAW);
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesSize, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_data.size() * sizeof(unsigned int), &index_data[0], GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    // position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    // normal
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+
+    // texture coordinates
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
     glEnableVertexAttribArray(2);
 }
 
@@ -38,5 +42,5 @@ bool Mesh::is_valid() {
 
 void Mesh::draw() {
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
 }
