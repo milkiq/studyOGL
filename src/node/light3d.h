@@ -16,8 +16,8 @@ public:
 
 class Light3DMesh : public Light3D {
 private:
-    Mesh *mesh;
-    Shader *shader;
+    Mesh *mesh = nullptr;
+    Shader *shader = nullptr;
 
 public:
     Light3DMesh(
@@ -26,7 +26,7 @@ public:
     );
     ~Light3DMesh();
 
-    void draw(Camera *camera, float aspect);
+    void draw();
 };
 
 #endif

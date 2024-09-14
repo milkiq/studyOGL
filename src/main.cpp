@@ -5,23 +5,25 @@
 #include "core/math.h"
 #include "core/shader.h"
 #include "core/mesh.h"
+#include "core/viewport.h"
 #include "node/camera.h"
+#include "node/mesh3d.h"
 #include "node/light3d.h"
 #include "resource/image.h"
 
-static unsigned char g_vert_spv_data[] = {
+static unsigned char box_vert_spv_data[] = {
     #include "triangle.vert.spv.h"
 };
 
-static unsigned char g_frag_spv_data[] = {
+static unsigned char box_frag_spv_data[] = {
     #include "triangle.frag.spv.h"
 };
 
-static unsigned char g_light_vert_spv_data[] = {
+static unsigned char light_mesh_vert_spv_data[] = {
     #include "light_mesh.vert.spv.h"
 };
 
-static unsigned char g_light_frag_spv_data[] = {
+static unsigned char light_mesh_frag_spv_data[] = {
     #include "light_mesh.frag.spv.h"
 };
 
@@ -30,10 +32,44 @@ using namespace std;
 float vp_width = 800.0f;
 float vp_height = 600.0f;
 
+float vertices[] = {
+//     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
+    0.25f,  0.25f, 0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 前右上
+    0.25f, -0.25f, 0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 前右下
+    -0.25f, -0.25f, 0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 前左下
+    -0.25f,  0.25f, 0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 前左上
+    0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f,   // 后右上
+    0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,   // 后右下
+    -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // 后左下
+    -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f    // 后左上
+};
+
+unsigned int indices[] = {
+    // 前
+    0, 1, 3, // 第一个三角形
+    1, 2, 3,  // 第二个三角形
+    // 上
+    4, 0, 7,
+    0, 3, 7,
+    // 下
+    1, 5, 2,
+    5, 6, 2,
+    // 左
+    3, 2, 7,
+    2, 6, 7,
+    // 右
+    4, 5, 0,
+    5, 1, 0,
+    // 后
+    7, 6, 4,
+    6, 5, 4,
+};
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     vp_width = width;
     vp_height = height;
+    Viewport::get_main_viewport()->set_size(width, height);
     glViewport(0, 0, width, height);
 }
 
@@ -51,36 +87,6 @@ void processInput(GLFWwindow* window)
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-}
-
-void initBuffers(
-    const float * const vertices,
-    unsigned int numVertices,
-    const unsigned int * const indices,
-    unsigned int numIndices,
-    unsigned int &VBO,
-    unsigned int &EBO,
-    unsigned int &VAO
-) {
-
-    glGenBuffers(1, &EBO);
-    glGenBuffers(1, &VBO);
-    glGenVertexArrays(1, &VAO);
-
-    glBindVertexArray(VAO);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, numVertices, vertices, GL_STATIC_DRAW);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices, indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
 }
 
 unsigned int gen_tex(const char* filename) {
@@ -102,9 +108,7 @@ unsigned int gen_tex(const char* filename) {
     return texture;
 }
 
-int main(int argc, char** argv)
-{
-
+GLFWwindow* create_window(const char* title, int width, int height, GLFWframebuffersizefun size_callback) {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 #ifndef __APPLE__
@@ -113,77 +117,63 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(vp_width, vp_height, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
     if (window == NULL)
     {
         cout << "Failed to create GLFW window" << endl;
         glfwTerminate();
-        return -1;
+        return nullptr;
     }
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         cout << "Failed to initialize GLAD" << endl;
+        return nullptr;
+    }
+
+    glViewport(0, 0, width, height);
+    glfwSetFramebufferSizeCallback(window, size_callback);
+
+    return window;
+}
+
+int main(int argc, char** argv)
+{
+
+    GLFWwindow* window = create_window("LearnOpenGL", vp_width, vp_height, framebuffer_size_callback);
+
+    Viewport vp(vp_width, vp_height);
+
+    if (window == nullptr) {
         return -1;
     }
 
-    glViewport(0, 0, 800, 600);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    Camera main_camera;
+    main_camera.set_clip(0.1f, 100.0f);
+    main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
+    vp.set_main_camera(&main_camera);
 
-    float vertices[] = {
-    //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-        0.25f,  0.25f, 0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 前右上
-        0.25f, -0.25f, 0.25f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 前右下
-        -0.25f, -0.25f, 0.25f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 前左下
-        -0.25f,  0.25f, 0.25f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 前左上
-        0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f,   // 后右上
-        0.25f, -0.25f, -0.25f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,   // 后右下
-        -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // 后左下
-        -0.25f,  0.25f, -0.25f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f    // 后左上
-    };
-
-    unsigned int indices[] = {
-        // 前
-        0, 1, 3, // 第一个三角形
-        1, 2, 3,  // 第二个三角形
-        // 上
-        4, 0, 7,
-        0, 3, 7,
-        // 下
-        1, 5, 2,
-        5, 6, 2,
-        // 左
-        3, 2, 7,
-        2, 6, 7,
-        // 右
-        4, 5, 0,
-        5, 1, 0,
-        // 后
-        7, 6, 4,
-        6, 5, 4,
-    };
-
-    unsigned int VBO, EBO, VAO;
-    initBuffers(vertices, sizeof(vertices), indices, sizeof(indices), VBO, EBO, VAO);
-
-    if (VAO == 0 || VBO == 0 || EBO == 0) {
+    Mesh box_mesh(vertices, sizeof(vertices), indices, sizeof(indices));
+    if (box_mesh.is_valid() == false) {
         return -1;
     }
+
+// box_mesh start
 
 #ifndef __APPLE__
-    Shader shader(
-        (const char*)g_vert_spv_data,
-        sizeof(g_vert_spv_data),
-        (const char*)g_frag_spv_data,
-        sizeof(g_frag_spv_data)
+    Shader box_shader(
+        (const char*)box_vert_spv_data,
+        sizeof(box_vert_spv_data),
+        (const char*)box_frag_spv_data,
+        sizeof(box_frag_spv_data)
     );
 #else
-    Shader shader("shaders/triangle.vert", "shaders/triangle.frag");
+    Shader box_shader("shaders/triangle.vert", "shaders/triangle.frag");
 #endif
 
-    if (shader.ID == -1) {
+    if (box_shader.is_valid() == false) {
         return -1;
     }
 
@@ -198,33 +188,55 @@ int main(int argc, char** argv)
         std::cout << "Failed to load awesomeface texture" << std::endl;
         return -1;
     }
-    // wrap repeat normal
 
-    // if not use binding, use this
-    // shader.use();
-    // shader.set_int("texture1", 0);
-    // shader.set_int("texture2", 1);
-    float last_frame_time = glfwGetTime();
+    box_shader.set_uniform_callback([texture, texture2](const Shader *shader) {
+        // wrap repeat normal
 
-    Camera main_camera;
-    main_camera.set_clip(0.1f, 100.0f);
-    main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // if not use binding, use this
+        // shader.use();
+        // shader.set_int("texture1", 0);
+        // shader.set_int("texture2", 1);
+        shader->bind_texture(texture, GL_TEXTURE0);
+        shader->bind_texture(texture2, GL_TEXTURE1);
+        shader->set_vec3("ourColor", 0.0f, 0.0f, 1.0f);
+        shader->set_float("mix_value", 0.2f);
+    });
 
-    float move_radius = 0.0f;
+    Mesh3D box_instance(&box_mesh, &box_shader);
+    box_instance.position = glm::vec3(0.0f, 0.0f, 0.0f);
+    box_instance.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    box_instance.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    Mesh mesh(vertices, sizeof(vertices), indices, sizeof(indices));
+// box_mesh end
+
+// light_mesh start
+
+#ifndef __APPLE__
     Shader light_shader(
-        (const char*)g_light_vert_spv_data,
-        sizeof(g_light_vert_spv_data),
-        (const char*)g_light_frag_spv_data,
-        sizeof(g_light_frag_spv_data)
+        (const char*)light_mesh_vert_spv_data,
+        sizeof(light_mesh_vert_spv_data),
+        (const char*)light_mesh_frag_spv_data,
+        sizeof(light_mesh_frag_spv_data)
     );
-    Light3DMesh light_mesh(&mesh, &light_shader);
+#else
+    Shader light_shader("shaders/light_mesh.vert", "shaders/light_mesh.frag");
+#endif
+
+    if (light_shader.is_valid() == false) {
+        return -1;
+    }
+
+    Light3DMesh light_mesh(&box_mesh, &light_shader);
     light_mesh.color = glm::vec3(1.0f, 1.0f, 1.0f);
     light_mesh.position = glm::vec3(0.6f, 0.0f, 0.0f);
     light_mesh.rotation = glm::vec3(2.0f, 1.0f, 0.0f);
     light_mesh.scale = glm::vec3(0.2f, 0.2f, 0.2f);
-    
+
+// light_mesh end
+
+    float move_radius = 0.0f;
+
+    float last_frame_time = glfwGetTime();
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
@@ -241,42 +253,14 @@ int main(int argc, char** argv)
         main_camera.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
         main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        glm::mat4 model_matrix = glm::mat4(1.0f);
-        glm::mat4 view_matrix = main_camera.get_view_matrix();
-        glm::mat4 projection_matrix = main_camera.get_projection_matrix(vp_width / vp_height);
+        box_instance.draw();
+        light_mesh.draw();
 
-        shader.use();
-        shader.set_vec3("ourColor", 0.0f, 0.0f, 1.0f);
-        GLint transformLoc = glGetUniformLocation(shader.ID, "model_matrix");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(model_matrix));
-        transformLoc = glGetUniformLocation(shader.ID, "view_matrix");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(view_matrix));
-        transformLoc = glGetUniformLocation(shader.ID, "projection_matrix");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(projection_matrix));
-
-        shader.set_float("mix_value", 0.2f);
-
-        // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
-
-        light_mesh.draw(&main_camera, vp_width / vp_height);
-
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
 
     glfwTerminate();
     return 0;

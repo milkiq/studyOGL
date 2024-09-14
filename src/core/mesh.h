@@ -14,6 +14,7 @@ public:
     Mesh(float *vertices, unsigned int verticesSize, unsigned int *indices, unsigned int indicesSize);
     ~Mesh();
 
+    bool is_valid();
     void draw();
 };
 

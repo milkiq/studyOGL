@@ -12,15 +12,15 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath): ID(-1) {
     std::string fragmentFileExtension = fragmentFilePath.substr(fragmentFilePath.find_last_of(".") + 1);
 
     if (vertexFileExtension == ".spv") {
-        vertex = genSpvShader(vertexPath, GL_VERTEX_SHADER);
+        vertex = gen_spv_shader(vertexPath, GL_VERTEX_SHADER);
     } else {
-        vertex = genTextShader(vertexPath, GL_VERTEX_SHADER);
+        vertex = gen_text_shader(vertexPath, GL_VERTEX_SHADER);
     }
 
     if (fragmentFileExtension == ".spv") {
-        fragment = genSpvShader(fragmentPath, GL_FRAGMENT_SHADER);
+        fragment = gen_spv_shader(fragmentPath, GL_FRAGMENT_SHADER);
     } else {
-        fragment = genTextShader(fragmentPath, GL_FRAGMENT_SHADER);
+        fragment = gen_text_shader(fragmentPath, GL_FRAGMENT_SHADER);
     }
 
     if (vertex == -1 || fragment == -1) {
@@ -29,7 +29,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath): ID(-1) {
         return;
     }
     
-    if (!linkShaderProgram(vertex, fragment)) {
+    if (!link_shader_program(vertex, fragment)) {
         ID = -1;
     }
 
@@ -40,8 +40,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath): ID(-1) {
 Shader::Shader(const char* vertexSpvData, size_t vertexDataSize, const char* fragmentSpvData, size_t fragmentDataSize): ID(-1) {
     unsigned int vertex, fragment;
 
-    vertex = genSpvShader(vertexSpvData, vertexDataSize, GL_VERTEX_SHADER);
-    fragment = genSpvShader(fragmentSpvData, fragmentDataSize, GL_FRAGMENT_SHADER);
+    vertex = gen_spv_shader(vertexSpvData, vertexDataSize, GL_VERTEX_SHADER);
+    fragment = gen_spv_shader(fragmentSpvData, fragmentDataSize, GL_FRAGMENT_SHADER);
 
     if (vertex == -1 || fragment == -1) {
         cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << endl;
@@ -49,7 +49,7 @@ Shader::Shader(const char* vertexSpvData, size_t vertexDataSize, const char* fra
         return;
     }
 
-    if (!linkShaderProgram(vertex, fragment)) {
+    if (!link_shader_program(vertex, fragment)) {
         ID = -1;
     }
 
@@ -61,7 +61,7 @@ Shader::~Shader() {
     glDeleteProgram(ID);
 }
 
-bool Shader::linkShaderProgram(unsigned int vertexShader, unsigned int fragmentShader) {
+bool Shader::link_shader_program(unsigned int vertexShader, unsigned int fragmentShader) {
     ID = glCreateProgram();
     glAttachShader(ID, vertexShader);
     glAttachShader(ID, fragmentShader);
@@ -82,11 +82,11 @@ bool Shader::linkShaderProgram(unsigned int vertexShader, unsigned int fragmentS
     return true;
 }
 
-bool Shader::isValid() const {
+bool Shader::is_valid() const {
     return ID != -1;
 }
 
-unsigned int Shader::genTextShader(const char* shaderPath, unsigned int shaderType) {
+unsigned int Shader::gen_text_shader(const char* shaderPath, unsigned int shaderType) {
     string code;
     ifstream shaderFile;
 
@@ -128,7 +128,7 @@ unsigned int Shader::genTextShader(const char* shaderPath, unsigned int shaderTy
     return sid;
 }
 
-unsigned int Shader::genSpvShader(const char* shaderPath, unsigned int shaderType) {
+unsigned int Shader::gen_spv_shader(const char* shaderPath, unsigned int shaderType) {
     ifstream shaderFile;
     shaderFile.exceptions(ifstream::failbit | ifstream::badbit);
 
@@ -171,7 +171,7 @@ unsigned int Shader::genSpvShader(const char* shaderPath, unsigned int shaderTyp
     return sid;
 }
 
-unsigned int Shader::genSpvShader(const char* spvData, size_t dataSize, unsigned int shaderType) {
+unsigned int Shader::gen_spv_shader(const char* spvData, size_t dataSize, unsigned int shaderType) {
     unsigned int sid;
     sid = glCreateShader(shaderType);
     glShaderBinary(1, &sid, GL_SHADER_BINARY_FORMAT_SPIR_V, spvData, dataSize);
@@ -192,6 +192,28 @@ unsigned int Shader::genSpvShader(const char* spvData, size_t dataSize, unsigned
 
 void Shader::use() {
     glUseProgram(ID);
+
+    Viewport *vp = Viewport::get_main_viewport();
+    if (vp != nullptr) {
+        set_mat4("view_matrix", vp->get_view_matrix());
+        set_mat4("projection_matrix", vp->get_projection_matrix());
+    }
+
+    if (uniform_callback != nullptr) {
+        uniform_callback(this);
+    }
+
+    if (uniform_callback_func != nullptr) {
+        uniform_callback_func(this);
+    }
+}
+
+void Shader::set_uniform_callback(void (*callback)(const Shader *shader)) {
+    uniform_callback = callback;
+}
+
+void Shader::set_uniform_callback(std::function<void(const Shader *shader)> callback) {
+    uniform_callback_func = callback;
 }
 
 void Shader::set_bool(const std::string &name, bool value) const {
@@ -216,4 +238,9 @@ void Shader::set_vec3(const std::string &name, const glm::vec3 value) const {
 
 void Shader::set_mat4(const std::string &name, const glm::mat4 value) const {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::bind_texture(unsigned int texture, GLint unit) const {
+    glActiveTexture(unit);
+    glBindTexture(GL_TEXTURE_2D, texture);
 }

@@ -32,8 +32,11 @@ Mesh::~Mesh() {
     glDeleteVertexArrays(1, &VAO);
 }
 
+bool Mesh::is_valid() {
+    return VAO != 0 && VBO != 0 && EBO != 0;
+}
+
 void Mesh::draw() {
-    std::cout<<"Drawing mesh"<<VAO<<std::endl;
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, 0);
 }
