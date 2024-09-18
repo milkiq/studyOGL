@@ -3,6 +3,7 @@
 
 #include "math.h"
 #include "../node/camera.h"
+#include "../node/light3d.h"
 
 class Viewport {
 private:
@@ -16,6 +17,8 @@ private:
     Viewport& operator=(const Viewport& viewport) = delete;
 
 public:
+    Light3D* light;
+
     static Viewport* get_main_viewport();
 
     Viewport(float width, float height);

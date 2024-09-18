@@ -124,11 +124,51 @@ int main(int argc, char** argv)
 
     vp.set_main_camera(&main_camera);
 
+    glm::vec3 light_posistion = glm::vec3(0.5f, 0.5f, 0);
+
+    Light3D light;
+    light.position = light_posistion;
+    light.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    vp.light = &light;
+
     BoxModel box_model;
     Mesh box_mesh(*box_model.get_vertices(), *box_model.get_indices());
     if (box_mesh.is_valid() == false) {
         return -1;
     }
+
+// light_mesh start
+
+#ifndef __APPLE__
+    Shader light_shader(
+        (const char*)light_mesh_vert_spv_data,
+        sizeof(light_mesh_vert_spv_data),
+        (const char*)light_mesh_frag_spv_data,
+        sizeof(light_mesh_frag_spv_data)
+    );
+#else
+    Shader light_shader("shaders/light_mesh.vert", "shaders/light_mesh.frag");
+#endif
+
+    if (light_shader.is_valid() == false) {
+        return -1;
+    }
+
+    void (*light_uniform_callback)(const Shader *shader) = [](const Shader *shader) {
+        Viewport *vp = Viewport::get_main_viewport();
+        if (vp != nullptr && vp->light != nullptr) {
+            shader->set_vec3("light_color", vp->light->color);
+        }
+    };
+
+    light_shader.set_uniform_callback(light_uniform_callback);
+
+    Mesh3D light_mesh(&box_mesh, &light_shader);
+    light_mesh.position = light_posistion;
+    light_mesh.rotation = glm::vec3(MY_PI_4, 0.0f, 0.0f);
+    light_mesh.scale = glm::vec3(0.2f, 0.2f, 0.2f);
+
+// light_mesh end
 
 // box_mesh start
 
@@ -179,31 +219,6 @@ int main(int argc, char** argv)
 
 // box_mesh end
 
-// light_mesh start
-
-#ifndef __APPLE__
-    Shader light_shader(
-        (const char*)light_mesh_vert_spv_data,
-        sizeof(light_mesh_vert_spv_data),
-        (const char*)light_mesh_frag_spv_data,
-        sizeof(light_mesh_frag_spv_data)
-    );
-#else
-    Shader light_shader("shaders/light_mesh.vert", "shaders/light_mesh.frag");
-#endif
-
-    if (light_shader.is_valid() == false) {
-        return -1;
-    }
-
-    Light3DMesh light_mesh(&box_mesh, &light_shader);
-    light_mesh.color = glm::vec3(1.0f, 1.0f, 1.0f);
-    light_mesh.position = glm::vec3(0.5f, 0.5f, 0.1f);
-    light_mesh.rotation = glm::vec3(2.0f, 1.0f, 0.0f);
-    light_mesh.scale = glm::vec3(0.2f, 0.2f, 0.2f);
-
-// light_mesh end
-
     float move_radius = 0.0f;
 
     float last_frame_time = glfwGetTime();
@@ -220,9 +235,14 @@ int main(int argc, char** argv)
         last_frame_time = time_value;
 
         move_radius += MY_PI / 6. * delta;
+        if (move_radius > 2 * MY_PI) {
+            move_radius = 0.0f;
+        }
+        light.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
+        // light.color = glm::vec3(0.0f, 1.0f, 0.0f);
         // main_camera.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
         // main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        box_instance.rotation = glm::vec3(0.0f, move_radius, 0.0f);
+        // box_instance.rotation = glm::vec3(0.0f, move_radius, 0.0f);
 
         box_instance.draw();
         light_mesh.draw();

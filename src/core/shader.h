@@ -3,7 +3,6 @@
 
 #include <glad/glad.h>
 #include "math.h"
-#include "viewport.h"
 
 #include <string>
 #include <fstream>
@@ -37,6 +36,7 @@ public:
     void set_mat4(const std::string &name, const glm::mat4 value) const;
 
     void bind_texture(unsigned int texture, GLint unit) const;
+    void bind_block(const GLuint ubo, const unsigned int block_index, const char *block_name) const;
 
 private:
     void (*uniform_callback)(const Shader *shader) = nullptr;

@@ -193,12 +193,6 @@ unsigned int Shader::gen_spv_shader(const char* spvData, size_t dataSize, unsign
 void Shader::use() {
     glUseProgram(ID);
 
-    Viewport *vp = Viewport::get_main_viewport();
-    if (vp != nullptr) {
-        set_mat4("view_matrix", vp->get_view_matrix());
-        set_mat4("projection_matrix", vp->get_projection_matrix());
-    }
-
     if (uniform_callback != nullptr) {
         uniform_callback(this);
     }
@@ -247,4 +241,9 @@ void Shader::set_mat4(const std::string &name, const glm::mat4 value) const {
 void Shader::bind_texture(unsigned int texture, GLint unit) const {
     glActiveTexture(unit);
     glBindTexture(GL_TEXTURE_2D, texture);
+}
+
+void Shader::bind_block(const GLuint ubo, const GLuint binding_index, const char *block_name) const {
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, block_name), binding_index);
+    glBindBufferBase(GL_UNIFORM_BUFFER, binding_index, ubo);
 }

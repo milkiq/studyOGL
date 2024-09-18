@@ -11,8 +11,10 @@ class Mesh3D : public Node3D {
 private:
     Shader* shader = nullptr;
     Mesh* mesh = nullptr;
+    GLuint uboMatrices = -1;
 
 public:
+
     Mesh3D(
         Mesh *mesh,
         Shader *shader
