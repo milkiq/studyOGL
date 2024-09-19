@@ -22,10 +22,10 @@ layout (std140, binding = 0) uniform Matrices {
     mat4 model_matrix;
     mat4 view_matrix;
     mat4 projection_matrix;
-    mat3 normal_matrix;
+    mat4 normal_matrix;
 };
 
-layout (std430, binding = 1) buffer LightData {
+layout (std140, binding = 1) uniform LightData {
     Light light;
 };
 
@@ -54,7 +54,7 @@ void main()
     vec3 view_pos = vec3(0.0, 0.0, 0.0);
     vec3 view_dir = normalize(view_pos - FragPos);
     vec3 reflect_dir = reflect(-light_dir, Normal);
-    float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 64);
+    float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 128);
     vec3 specular = specular_strength * spec * light.color;
 
     vec3 result = (ambient + diffuse + specular) * base_color.rgb;

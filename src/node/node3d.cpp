@@ -18,7 +18,7 @@ Node3D::Matrices Node3D::get_matrices() {
         glm::mat4(1.0f),
         glm::mat4(1.0f),
         glm::mat4(1.0f),
-        glm::mat3(1.0f)
+        glm::mat4(1.0f)
     };
 
     Viewport *vp = Viewport::get_main_viewport();
@@ -28,7 +28,7 @@ Node3D::Matrices Node3D::get_matrices() {
     }
 
     glm::mat4 model_matrix = this->get_model_matrix();
-    glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
+    glm::mat4 normal_matrix = glm::transpose(glm::inverse(model_matrix));
     
     matrices.model_matrix = model_matrix;
     matrices.normal_matrix = normal_matrix;

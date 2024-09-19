@@ -12,13 +12,13 @@ layout (std140, binding = 0) uniform Matrices {
     mat4 model_matrix;
     mat4 view_matrix;
     mat4 projection_matrix;
-    mat3 normal_matrix;
+    mat4 normal_matrix;
 };
 
 void main()
 {
     gl_Position = projection_matrix * view_matrix * model_matrix * vec4(aPos, 1.0);
-    Normal = normal_matrix * aNormal;
+    Normal = mat3(normal_matrix) * aNormal;
     TexCoord = aTexCoord;
     FragPos = vec3(view_matrix * model_matrix * vec4(aPos, 1.0));
 }

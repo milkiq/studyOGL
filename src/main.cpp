@@ -238,7 +238,8 @@ int main(int argc, char** argv)
         if (move_radius > 2 * MY_PI) {
             move_radius = 0.0f;
         }
-        light.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
+        light.position = glm::vec3(1.0f * sin(move_radius), 0.5f, 1.0f * cos(move_radius));
+        light_mesh.position = light.position;
         // light.color = glm::vec3(0.0f, 1.0f, 0.0f);
         // main_camera.position = glm::vec3(2.0f * sin(move_radius), 1.0f, 2.0f * cos(move_radius));
         // main_camera.look_at(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));

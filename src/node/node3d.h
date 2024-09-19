@@ -9,7 +9,7 @@ public:
         glm::mat4 model_matrix;
         glm::mat4 view_matrix;
         glm::mat4 projection_matrix;
-        glm::mat3 normal_matrix;
+        glm::mat4 normal_matrix;
     };
 
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
